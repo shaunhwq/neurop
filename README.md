@@ -1,6 +1,33 @@
 
 # Neural Color Operators for Sequential Image Retouching (ECCV2022) 
 
+### Installation
+
+```
+conda create -n pt112c102 python=3.8
+conda activate pt112c102
+conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=10.2 -c pytorch
+pip3 install opencv-python tqdm
+```
+
+### Running:
+```
+cd codes_pytorch
+```
+
+```
+usage: demo_neurop.py [-h] --input_dir INPUT_DIR --output_dir OUTPUT_DIR [--device DEVICE] --weights WEIGHTS
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --input_dir INPUT_DIR
+                        Path to input folder containing images
+  --output_dir OUTPUT_DIR
+                        Path to output folder
+  --device DEVICE       Device to use e.g. 'cuda:0', 'cuda:1', 'cpu'
+  --weights WEIGHTS     Path to weights
+```
+
 *[Yili Wang](https://yili.host), Xin Li, [Kun Xu](https://cg.cs.tsinghua.edu.cn/people/~kun/), Dongliang He, Qi Zhang, Fu Li, Errui Ding*
 
 
