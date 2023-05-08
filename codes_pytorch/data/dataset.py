@@ -19,6 +19,9 @@ class InitDataset(Dataset):
         self.file_bc = defaultdict(list)
         self.file_vb = defaultdict(list)
 
+        # Get basename and get first component of the filename. E.g. 0027-1.png => 0027.
+        # Stores the file path in the dictionary with the same key.
+        # e.g. 0027: [path1, path2, path3], where path1,2,3 have the same key. E.g. some_path/0027-1.png, some_path/0027-2.png, some_path/0027-3.png
         for f_ex,f_bc,f_vb in zip(filepath_EX,filepath_BC,filepath_VB):
             idx_ex = f_ex.split('/')[-1].split('-')[0]
             idx_bc = f_bc.split('/')[-1].split('-')[0]
@@ -29,8 +32,32 @@ class InitDataset(Dataset):
 
         self.file_keys = list(self.file_ex.keys())
     def __len__(self):
+        # Returns number of unique images
         return len(self.file_keys)
-    def __getitem__(self,index):       
+
+    def __getitem__(self,index):
+        """
+        Randomly samples 2 images from the list. Then, we try to enhance an image from 1 enhancement
+        strength to another, while making sure that at strength of 0, input = output.
+
+        For each unique id, there are 20 images of different enhancement strengths (thats why /20)
+
+        Definitions:
+        A images = input images
+        B images = ground truth
+        val is the enhancement strength needed to adjust A to B
+
+        if we sample two images, A = 0027-4.png, B = 0027-20.png,
+        Enhancement strength required = val = (20 - 4) / 20 = 0.8.
+
+        Then, model will try to learn using:
+
+        val = (20-4)/20
+        A_pred = operator(A_input, 0)
+        B_pred = operator(A_input, val)
+        unary_loss = l1_loss(A_pred, A_input)
+        pairwise_loss = l1_loss(B_pred, B_input)
+        """
         key = self.file_keys[index]    
         A_ex, B_ex = np.random.choice(self.file_ex[key],2,replace=False)
         A_bc, B_bc = np.random.choice(self.file_bc[key],2,replace=False)

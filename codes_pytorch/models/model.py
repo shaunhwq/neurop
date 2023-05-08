@@ -52,13 +52,17 @@ class InitModel():
         self.optimizer.zero_grad()
         self.rec_A_ex, self.rec_A_bc, self.rec_A_vb,self.map_B_ex, self.map_B_bc, self.map_B_vb = self.netG(self.A_ex,self.A_bc,self.A_vb,self.val_ex,self.val_bc,self.val_vb)
 
+        # Enforces that color remains unchanged when strength is 0
         loss_unary_ex = self.criterion(self.rec_A_ex, self.A_ex)
         loss_unary_bc = self.criterion(self.rec_A_bc, self.A_bc)
         loss_unary_vb = self.criterion(self.rec_A_vb, self.A_vb)
+
+        # Enforce that neurOP behaviour is as similar to the standard operator as much as possible
         loss_pair_ex = self.criterion(self.map_B_ex, self.B_ex)
         loss_pair_bc = self.criterion(self.map_B_bc, self.B_bc)
         loss_pair_vb = self.criterion(self.map_B_vb, self.B_vb)
 
+        # Both losses are using L1 loss.
         loss_unary = loss_unary_ex + loss_unary_bc + loss_unary_vb
         loss_pair = loss_pair_ex + loss_pair_bc + loss_pair_vb
         loss = loss_unary + loss_pair
