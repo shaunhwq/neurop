@@ -1,0 +1,36 @@
+#### general settings
+name: neurop_init_vb
+is_init: true
+is_single: true
+is_train: true
+device: cuda 
+
+#### datasets
+datasets:
+  name: init
+  mode: init_single
+  dataroot: /cephFS/video_lab/datasets/bigolive_color_enhance/neurops/dataset-init/VB
+  n_cpus: 32
+  batch_size: 1
+  
+
+#### network structures
+network_G:
+  init_model: ~ 
+  in_nc: 3
+  out_nc: 3
+  base_nf: 64
+  cond_nf: 32
+  strict_load: true
+
+#### training settings: learning rate scheme, loss
+train:
+  lr_G: !!float 5e-5
+  beta1: 0.9
+  beta2: 0.99
+  niter: 100000
+  manual_seed: 0
+
+#### logger
+logger:
+  print_freq: 100  

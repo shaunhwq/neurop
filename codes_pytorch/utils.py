@@ -73,6 +73,8 @@ def get_file_paths(folder,suffix):
     for root, dirs, filenames in os.walk(folder):
         filenames = sorted(filenames)
         for filename in filenames:
+            if filename[0] == ".":
+                continue
             input_path = os.path.abspath(root)
             file_path = os.path.join(input_path, filename)
             if filename.split('.')[-1] == suffix:

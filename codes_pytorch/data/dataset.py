@@ -6,6 +6,39 @@ from torch.utils.data import Dataset
 import numpy as np
 
 
+class InitSingleDataset(Dataset):
+    def __init__(self,dataset_opt):
+        super().__init__()
+        opt = dataset_opt
+        filepath = get_file_paths(opt['dataroot'],'png')
+        self.file = defaultdict(list)
+
+        # Get basename and get first component of the filename. E.g. 0027-1.png => 0027.
+        # Stores the file path in the dictionary with the same key.
+        # e.g. 0027: [path1, path2, path3], where path1,2,3 have the same key. E.g. some_path/0027-1.png, some_path/0027-2.png, some_path/0027-3.png
+        for f in filepath:
+            idx = f.split('/')[-1].split('-')[0]
+            self.file[idx].append(f)
+
+        self.file_keys = list(self.file.keys())
+        print(f"Number of files: {len(self.file_keys)}")
+        print(f"Data root: {os.path.join(opt['dataroot'],'EX')}")
+
+    def __len__(self):
+        # Returns number of unique images
+        return len(self.file_keys)
+
+    def __getitem__(self,index):
+        key = self.file_keys[index]    
+        A, B = np.random.choice(self.file[key],2,replace=False)
+        val = torch.tensor((int(get_file_name(B).split('-')[-1]) - int(get_file_name(A).split('-')[-1]))/20).float()
+        img_A = np.array(imageio.imread(A))/255
+        img_A = torch.from_numpy(np.ascontiguousarray(np.transpose(img_A, (2, 0, 1)))).float()
+        img_B = np.array(imageio.imread(B))/255
+        img_B = torch.from_numpy(np.ascontiguousarray(np.transpose(img_B, (2, 0, 1)))).float()
+        return {'A': img_A, 'B': img_B, 'val':val}
+
+
 class InitDataset(Dataset):
     def __init__(self,dataset_opt):
         super(InitDataset,self).__init__()

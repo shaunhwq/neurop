@@ -17,6 +17,8 @@ def build_train_loader(dataset_opt):
         dataset = InitDataset(dataset_opt) 
     elif mode == "finetune":
         dataset = FinetuneDataset(dataset_opt,phase="train")
+    elif mode == "init_single":
+        dataset = InitSingleDataset(dataset_opt)
     else:
         raise NotImplementedError('Dataset [{:s}] is not recognized.'.format(mode))
     
@@ -39,6 +41,8 @@ def build_val_loader(dataset_opt):
         dataset = InitDataset(dataset_opt) 
     elif mode == "finetune":
         dataset = FinetuneDataset(dataset_opt,phase="val")
+    elif mode == "init_single":
+        dataset = InitSingleDataset(dataset_opt)
     else:
         raise NotImplementedError('Dataset [{:s}] is not recognized.'.format(mode))
     

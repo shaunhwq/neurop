@@ -9,6 +9,113 @@ import torch
 import torch.nn as nn
 
 
+class InitSingle():
+    def __init__(self, opt):
+        self.opt = opt
+        self.device = torch.device(opt['device'])
+        self.name = "neurop_init_single"
+        net_opt = opt["network_G"]
+        self.netG = RendererSingle(net_opt['in_nc'],net_opt['out_nc'],net_opt['base_nf']).to(self.device)
+        self.netG = DataParallel(self.netG)
+        self.print_network()
+        self.load() 
+        self.netG.train()
+
+        train_opt = opt['train']
+        self.criterion = nn.L1Loss().to(self.device)
+        self.optimizer = torch.optim.Adam(self.netG.parameters(), lr=train_opt['lr_G'], weight_decay=0, betas=(train_opt['beta1'], train_opt['beta2']))
+        self.log_dict = OrderedDict()
+
+    def feed_data(self, data):
+        self.A = data['A'].to(self.device) 
+        self.B = data['B'].to(self.device) 
+        self.val = data['val'].to(self.device) 
+        
+        self.rec_A = None
+        self.map_B = None
+
+    def optimize_parameters(self):
+        self.optimizer.zero_grad()
+        self.rec_A ,self.map_B = self.netG(self.A ,self.val)
+
+        loss_unary = self.criterion(self.rec_A, self.A)
+        loss_pair = self.criterion(self.map_B, self.B)
+        loss = loss_unary + loss_pair
+        loss.backward()
+
+        self.log_dict['loss_unary'] = loss_unary.item()
+        self.log_dict['loss_pair'] = loss_pair.item()
+        self.log_dict['loss_total'] = loss.item()
+        self.optimizer.step()    
+
+    def test(self):
+        self.netG.eval()
+        with torch.no_grad():
+            self.rec_A, self.map_B = self.netG(self.A,self.val)
+        self.netG.train()        
+
+    def get_current_log(self):
+        return self.log_dict
+
+    def get_current_visuals(self):
+        out_dict = OrderedDict()
+        out_dict['map_B'] = self.map_B.detach()[0].float().cpu().numpy().transpose(1,2,0)
+        out_dict['B'] = self.B.detach()[0].float().cpu().numpy().transpose(1,2,0)
+        out_dict['rec_A'] = self.rec_A.detach()[0].float().cpu().numpy().transpose(1,2,0)
+        out_dict['A'] = self.A.detach()[0].float().cpu().numpy().transpose(1,2,0)
+        return out_dict
+
+    def print_network(self):
+        s, n = self.get_network_description(self.netG)
+        if isinstance(self.netG, nn.DataParallel):
+            net_struc_str = '{} - {}'.format(self.netG.__class__.__name__,
+                                             self.netG.module.__class__.__name__)
+        else:
+            net_struc_str = '{}'.format(self.netG.__class__.__name__)
+
+        logger = logging.getLogger('base')
+        logger.info('Network G structure: {}, with parameters: {:,d}'.format(net_struc_str, n))
+        logger.info(s)
+
+    def get_current_learning_rate(self):
+        return [param_group['lr'] for param_group in self.optimizer.param_groups]
+
+    def get_network_description(self, network):
+        """Get the string and total parameters of the network"""
+        if isinstance(network, nn.DataParallel):
+            network = network.module
+        return str(network), sum(map(lambda x: x.numel(), network.parameters()))
+
+    def save(self, iter_label):
+        network = self.netG
+        save_filename = '{}_{}.pth'.format(iter_label, self.name)
+        save_path = os.path.join(self.opt['path']['models'], save_filename)
+        if isinstance(network, nn.DataParallel):
+            network = network.module
+        state_dict = network.state_dict()
+        for key, param in state_dict.items():
+            state_dict[key] = param.cpu()
+        torch.save(state_dict, save_path)
+
+    def load(self):
+        load_path_G = self.opt['path']['pretrain_model_G']
+        strict =  self.opt['path']['strict_load']
+        network = self.netG
+
+        if load_path_G is not None:
+            logger.info('Loading model for G [{:s}] ...'.format(load_path_G))
+
+            if isinstance(network, nn.DataParallel):
+                network = network.module
+            load_net = torch.load(load_path)
+            load_net_clean = OrderedDict()  # remove unnecessary 'module.'
+            for k, v in load_net.items():
+                if k.startswith('module.'):
+                    load_net_clean[k[7:]] = v
+                else:
+                    load_net_clean[k] = v
+            network.load_state_dict(load_net_clean, strict=strict)
+
 
 class InitModel():
     def __init__(self, opt):

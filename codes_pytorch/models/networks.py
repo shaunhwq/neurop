@@ -25,6 +25,17 @@ class Operator(nn.Module):
         return y
 
 
+class RendererSingle(nn.Module):
+    def __init__(self, in_nc=3, out_nc=3,base_nf=64):
+        super().__init__()
+        self.renderer = Operator(in_nc,out_nc,base_nf)
+
+    def forward(self, img, value):
+        unary = self.renderer(img, 0.0)
+        pair = self.renderer(img, value)
+        return unary, pair
+
+
 class Renderer(nn.Module):
     def __init__(self, in_nc=3, out_nc=3,base_nf=64):
         super(Renderer,self).__init__()
